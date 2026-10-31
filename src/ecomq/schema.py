@@ -5,12 +5,14 @@
   relevance  query–商品相关性四分类，与 ESCI Task 2 一致。标签来自 ESCI 人工标注。
   relevance_cot  同一个四分类，但先输出一句理由（reason），再输出标签（E9，DEVLOG S21）。
              理由写在前面，标签以理由为条件；理由由 ecomq.data.make_rationales 生成。
+  relevance_zh   中文电商检索的二分类（relevant / irrelevant），数据来自 Multi-CPR 电商子集（D5，DEVLOG S26）。
 标签定义与例子见 docs/LABELS.md。
 """
 import json
 
 INTENTS = ["product_search", "compare", "after_sales", "inquiry", "other"]
 RELEVANCE = ["exact", "substitute", "complement", "irrelevant"]
+RELEVANCE_ZH = ["relevant", "irrelevant"]
 ESCI_TO_RELEVANCE = {"E": "exact", "S": "substitute", "C": "complement", "I": "irrelevant"}
 ATTR_KEYS = ["brand", "category", "model", "color", "size", "gender", "material", "price_min", "price_max"]
 PRICE_KEYS = {"price_min", "price_max"}
@@ -19,7 +21,11 @@ TASK_FIELDS = {
     "full": ("intent", "attributes", "rewrite", "relevance"),
     "relevance": ("relevance",),
     "relevance_cot": ("reason", "relevance"),
+    "relevance_zh": ("relevance",),
 }
+
+# 各任务 relevance 字段的候选标签（标签打分 score_labels 用）
+LABELS = {"relevance": RELEVANCE, "relevance_cot": RELEVANCE, "relevance_zh": RELEVANCE_ZH}
 
 LABEL_DEFINITIONS = (
     "exact: the product satisfies all requirements of the query. "
@@ -52,6 +58,12 @@ INSTRUCTIONS = {
         + "First write one short sentence describing what the product is and how it relates to what the query "
         "is looking for, then give the label. "
         'Output JSON only, in the form {"reason": "<one sentence>", "relevance": "<label>"}.'
+    ),
+    "relevance_zh": (
+        "你是电商搜索的相关性判断模型。给定用户的搜索词（query）和一个商品标题，判断这个商品是否满足用户的搜索需求。"
+        "relevant：商品就是用户要找的东西，或者满足搜索词的核心需求。"
+        "irrelevant：商品与搜索需求无关，或者不满足核心需求（例如品类不同）。"
+        '只输出 JSON，格式为 {"relevance": "<label>"}。'
     ),
 }
 
@@ -158,6 +170,15 @@ def _validate_relevance(rec: dict, label: dict) -> list[str]:
     return errors
 
 
+def _validate_relevance_zh(rec: dict, label: dict) -> list[str]:
+    errors = []
+    if not rec.get("title"):
+        errors.append("relevance_zh task requires a product title")
+    if label.get("relevance") not in RELEVANCE_ZH:
+        errors.append(f"relevance not in label set: {label.get('relevance')!r}")
+    return errors
+
+
 def _validate_relevance_cot(rec: dict, label: dict) -> list[str]:
     errors = _validate_relevance(rec, label)
     reason = label.get("reason")
@@ -181,4 +202,6 @@ def validate_record(rec: dict) -> list[str]:
         return _validate_relevance(rec, label)
     if task == "relevance_cot":
         return _validate_relevance_cot(rec, label)
+    if task == "relevance_zh":
+        return _validate_relevance_zh(rec, label)
     return _validate_full(rec, label)
