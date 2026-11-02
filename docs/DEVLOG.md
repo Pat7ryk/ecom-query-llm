@@ -30,6 +30,7 @@
 | P16 | S20 | 本机临时目录里的调参集、测试集记录被系统自动清理，先验调整报 `FileNotFoundError` | 从服务器重新拉取并核对；S24 再次发生后，分析输入改放到项目目录下的 `.cache/`（不进 git），由 `scripts/local_cache.sh` 从服务器打分重建 |
 | P17 | S23 | E9a 测试集评测作业失败：`JSONDecodeError: Invalid \escape` | 模型生成的理由里有 JSON 不允许的转义（如 `\'`），备用解析改为解码失败时宽松处理；补单测，只重跑测试集 |
 | P18 | S23 | token 长度检查形同虚设：统计出的最大长度是 2 | transformers 5 的 `apply_chat_template(tokenize=True)` 返回字典，`len` 得到键的个数；改为先渲染文本再分词，加合理性断言，并重新检查已训练的数据（最大 391，没有截断） |
+| P19 | S26 | D5 的数据准备作业在 CCDS 上失败：`No module named 'sklearn'` | 本机试跑用的环境有 scikit-learn，服务器环境没有；BM25 的词频矩阵改为只用 scipy 构建，不给服务器环境加依赖；与原实现相比开发集候选集合完全相同、BM25 指标一致 |
 
 ---
 
@@ -1752,3 +1753,13 @@
 - `score_labels` 支持 `--task` 和不加载适配器（零样本）。四分类的打分路径不变。
 - 新增通用的 GPU 作业脚本 `gpu_module.sbatch`。
 - 单测 67 个，全部通过。
+
+**P19 · D5 数据准备在服务器上失败（scikit-learn 缺失）**
+- 现象：D5 的数据准备作业运行 12 秒后失败，报 `ModuleNotFoundError: No module named 'sklearn'`。
+- 原因：BM25 用了 scikit-learn 的 `CountVectorizer` 构建词频矩阵。本机试跑用的 anaconda 环境自带 scikit-learn，CCDS 的 `ecomq` 环境里没有，所以本机测试没有发现。
+- 解决：不给服务器环境加新依赖，改为自己用 scipy 的稀疏矩阵构建词频矩阵（`ecomq.retrieval.BM25._counts`）。
+- 验证：在本机用同样的数据重跑一次。
+  - BM25 指标完全相同（开发集 MRR@10 0.2657，前 20 名召回 0.534）。
+  - 开发集 2 万条候选的集合完全相同，只有 319 条的分数在小数第 4 位不同，导致少数分数并列的候选排序互换（求和顺序不同带来的浮点误差）。
+  - 训练集 2 万条中只有 1 个难负例因此换成了另一个商品。
+- 预防：今后新加依赖第三方库的代码，先在服务器环境里检查能否导入，再提交作业。
