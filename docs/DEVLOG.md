@@ -1665,7 +1665,12 @@
 **为什么**：团队待办（`docs/TEAM_TODO.md`）里的 D1–D5 是项目提案中有、但 CCDS 阶段没做的内容。仓库所有者要求现在补上。D1、D2 在单卡上就能做；D3–D5 原计划等 NSCC 的结论，这里先在单卡上做出可用的版本，规模按单卡能承受的范围设定。
 
 **范围上的调整**（与提案相比）
-- D3：提案打算用强模型从商品标题反向合成 query，需要外部 API。改为直接标注 ESCI 里真实的 query：分布与相关性任务一致，也不需要 API。标注模型用本地的 Qwen2.5-14B-Instruct（比被训练的 7B 大一档）；磁盘不够时退回 7B，并在结果里注明。
+- D3：提案打算用强模型从商品标题反向合成 query，需要外部 API。改为直接标注 ESCI 里真实的 query：分布与相关性任务一致，也不需要 API。
+  - 原打算用本地的 Qwen2.5-14B-Instruct 标注。但启动前检查发现家目录已用约 85 GB（配额约 100 GB），放不下 14B（29 GB）。
+  - 所以改用 Qwen2.5-7B-Instruct 基座零样本标注。这相当于“基座给自己的微调版本出题”，标注质量是这次实验最大的局限；N4 计划在 NSCC 上用 72B 重做。
+- 磁盘：旧实验的 69 个 checkpoint 目录共占 32 GB（最终适配器已另存在各实验目录下，checkpoint 只是训练中间状态）。是否清理由仓库所有者决定。
+  - 新实验训练时加 `save_only_model=true`：checkpoint 只存模型、不存优化器状态，每个实验的占用减半。
+  - 按最优验证损失选 checkpoint 仍然可用（没有用 DeepSpeed，transformers 允许这种组合），训练结果不受影响，只是不能从 checkpoint 续训；单次训练不到 1 小时，用不到续训。
 - D4：vLLM 测试直接加载 LoRA 适配器（多 LoRA 推理），不先合并成完整模型。家目录配额有限，合并一个 7B 模型要多占 15 GB。
 - D5：Multi-CPR 只标注了每个 query 的一个相关商品，没有不相关标注，所以做成二分类（relevant / irrelevant）加重排评测，而不是四分类。
 
@@ -1694,7 +1699,7 @@
 ### D3 · 意图、属性、改写（`ecomq.data.annotate_query`、`build_d3`、`ecomq.eval.rewrite_recall`）
 
 - 做法：
-  - **标注**：本地模型为 E2a 训练与验证 query（5,250 个）和测试 query（2,500 个）标注 `{intent, attributes, rewrite}`。
+  - **标注**：本地模型（7B 基座，见上）为 E2a 训练与验证 query（5,250 个）和测试 query（2,500 个）标注 `{intent, attributes, rewrite}`。
     - 规则校验：意图必须在标签集内，属性值必须原样出现在 query 里，改写不能为空。
     - 不合格的附上错误原因重试一次，仍不合格的丢弃。
   - **训练**：

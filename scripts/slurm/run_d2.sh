@@ -3,6 +3,7 @@
 #   r8   ：lora_rank=8,  lora_alpha=16（alpha/r 保持 2，与 E2a 的 16/32 相同）
 #   r64  ：lora_rank=64, lora_alpha=128
 #   qv   ：lora_target=q_proj,v_proj（只训练注意力的 q、v 投影；r=16 不变）
+# 训练时 save_only_model=true：checkpoint 只存模型、不存优化器状态（家目录配额有限，见 S26），不影响训练结果。
 # 每个设定 3 个种子；先跑完种子 42 的三个设定，尽早看到方向。每个模型对调参集和测试集做标签打分。
 #   setsid nohup bash scripts/slurm/run_d2.sh >> logs/chain_d2.log 2>&1 < /dev/null &
 set -eo pipefail
@@ -30,7 +31,7 @@ for seed in 42 43 44; do
   for v in r8 r64 qv; do
     RUN=d2-$v-s$seed
     if [ -s "$OUTPUT_ROOT/label_scores/$RUN-test.jsonl" ]; then log "$RUN already scored, skip"; continue; fi
-    export TRAIN_OVERRIDES="seed=$seed ${OVR[$v]}"
+    export TRAIN_OVERRIDES="seed=$seed save_only_model=true ${OVR[$v]}"
     RUN=$RUN CONFIG=$CFG DATASET_DIR="$DATA_ROOT/e1_relevance/llamafactory" EVALS=none bash scripts/slurm/chain.sh \
       || { log "train $RUN failed"; unset TRAIN_OVERRIDES; continue; }
     unset TRAIN_OVERRIDES

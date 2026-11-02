@@ -16,7 +16,7 @@ E1="$DATA_ROOT/e1_relevance/splits"
 TUNE="$DATA_ROOT/esci_tune/splits/tune.jsonl"
 TEST="$DATA_ROOT/esci_test2500/splits/test.jsonl"
 POOL="${POOL:-$DATA_ROOT/e4_50k/splits/train.jsonl}"   # E4 的 5 万条嵌套训练集（包含 E2a 的 2 万条）
-ANNOTATOR="${ANNOTATOR:-Qwen2.5-14B-Instruct}"
+ANNOTATOR="${ANNOTATOR:-Qwen2.5-7B-Instruct}"   # 家目录配额放不下 14B（S26），默认用 7B 基座零样本标注
 LS="$OUTPUT_ROOT/label_scores"
 STAGES="${STAGES:-d1 d5 d3 d4}"
 log() { echo "$(date +%T) [drest] $*"; }
@@ -42,7 +42,8 @@ score() {  # score <名字> <基座> <适配器，可空> <测试集> [额外的
 }
 train() {  # train <RUN> <基座> <配置> <数据目录> [TRAIN_OVERRIDES]
   [ -f "$OUTPUT_ROOT/$1/adapter_config.json" ] && { log "$1 trained, skip"; return 0; }
-  TRAIN_OVERRIDES="${5:-}" RUN=$1 MODEL=$2 CONFIG=$3 DATASET_DIR=$4 EVALS=none bash scripts/slurm/chain.sh
+  # save_only_model=true：checkpoint 不存优化器状态，省一半磁盘，不影响训练结果
+  TRAIN_OVERRIDES="save_only_model=true ${5:-}" RUN=$1 MODEL=$2 CONFIG=$3 DATASET_DIR=$4 EVALS=none bash scripts/slurm/chain.sh
 }
 
 d1() {  # MMLU：基座与 E2a 的 3 个种子，都用 4bit，与相关性评测时的加载方式一致
