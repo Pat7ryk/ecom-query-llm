@@ -9,6 +9,7 @@
 set -eo pipefail
 cd "$(dirname "$0")/../.."
 set -a; source .env; set +a
+source scripts/slurm/sbatch_retry.sh
 MODEL=Qwen2.5-7B-Instruct
 CFG=configs/sft/e2_relevance_qlora_1ep_best.yaml
 TUNE="$DATA_ROOT/esci_tune/splits/tune.jsonl"
@@ -19,7 +20,7 @@ wait_job() {
   sacct -j "$1" -X -n -o State | head -1 | tr -d ' '
 }
 score() {
-  local J S; J=$(sbatch --parsable --export=ALL,MODEL=$MODEL,RUN=$1,TEST=$2,NAME=$3,LOAD_4BIT=1 scripts/slurm/label_scores.sbatch)
+  local J S; J=$(sbatch_retry --parsable --export=ALL,MODEL=$MODEL,RUN=$1,TEST=$2,NAME=$3,LOAD_4BIT=1 scripts/slurm/label_scores.sbatch)
   S=$(wait_job "$J"); log "scores $3 job=$J state=$S"
 }
 declare -A OVR=(
@@ -31,10 +32,14 @@ for seed in 42 43 44; do
   for v in r8 r64 qv; do
     RUN=d2-$v-s$seed
     if [ -s "$OUTPUT_ROOT/label_scores/$RUN-test.jsonl" ]; then log "$RUN already scored, skip"; continue; fi
-    export TRAIN_OVERRIDES="seed=$seed save_only_model=true ${OVR[$v]}"
-    RUN=$RUN CONFIG=$CFG DATASET_DIR="$DATA_ROOT/e1_relevance/llamafactory" EVALS=none bash scripts/slurm/chain.sh \
-      || { log "train $RUN failed"; unset TRAIN_OVERRIDES; continue; }
-    unset TRAIN_OVERRIDES
+    if [ -f "$OUTPUT_ROOT/$RUN/adapter_config.json" ]; then
+      log "$RUN trained, skip training"
+    else
+      export TRAIN_OVERRIDES="seed=$seed save_only_model=true ${OVR[$v]}"
+      RUN=$RUN CONFIG=$CFG DATASET_DIR="$DATA_ROOT/e1_relevance/llamafactory" EVALS=none bash scripts/slurm/chain.sh \
+        || { log "train $RUN failed"; unset TRAIN_OVERRIDES; continue; }
+      unset TRAIN_OVERRIDES
+    fi
     score $RUN "$TUNE" $RUN-tune
     score $RUN "$TEST" $RUN-test
   done

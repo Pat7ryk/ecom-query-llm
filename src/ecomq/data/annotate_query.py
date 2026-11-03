@@ -22,7 +22,7 @@ For the query below, output a JSON object with exactly these fields:
 - "intent": one of {", ".join(INTENTS)}. product_search = looking for a product to buy; compare = comparing products or prices;
   after_sales = returns, repairs, orders; inquiry = a question about a product or topic; other = anything else.
 - "attributes": an object whose keys come only from [{", ".join(ATTR_KEYS)}]. Each value must be copied exactly as it
-  appears in the query (same spelling). Include only attributes the query actually states; use {{}} if there are none.
+  appears in the query (same spelling). Include only attributes the query actually states; use {{{{}}}} if there are none.
   category is the kind of product (for example "running shoes"); price_min / price_max only for explicit prices.
 - "rewrite": the query rewritten as a clean search string: fix spelling mistakes, expand abbreviations, drop filler words,
   keep every constraint (brand, size, color, quantity, negation). If the query is already clean, repeat it unchanged.

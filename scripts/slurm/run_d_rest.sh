@@ -10,6 +10,7 @@
 set -eo pipefail
 cd "$(dirname "$0")/../.."
 set -a; source .env; set +a
+source scripts/slurm/sbatch_retry.sh
 BASE=Qwen2.5-7B-Instruct
 CFG=configs/sft/e2_relevance_qlora_1ep_best.yaml
 E1="$DATA_ROOT/e1_relevance/splits"
@@ -27,7 +28,7 @@ wait_job() {
 # submit <名字> <sbatch 参数...>：提交并等待；失败时返回非零
 submit() {
   local name=$1; shift
-  local J S; J=$(sbatch --parsable "$@"); S=$(wait_job "$J"); log "$name job=$J state=$S"
+  local J S; J=$(sbatch_retry --parsable "$@"); S=$(wait_job "$J"); log "$name job=$J state=$S"
   [ "$S" = "COMPLETED" ]
 }
 module_job() {  # module_job <名字> <时限> <模块> <参数字符串> [ENV_NAME]

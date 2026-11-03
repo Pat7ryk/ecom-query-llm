@@ -99,3 +99,10 @@ def test_relevance_zh_task():
     assert LABELS["relevance_zh"] == RELEVANCE_ZH
     assert format_output({"relevance": "irrelevant"}, "relevance_zh") == '{"relevance": "irrelevant"}'
     assert "电商搜索" in build_user_prompt("红色运动鞋", "女款红色跑步鞋", "relevance_zh")
+
+
+def test_annotate_prompt_formats():
+    from ecomq.data.annotate_query import PROMPT
+
+    p = PROMPT.format(query="nike shoes")
+    assert p.endswith("Query: nike shoes") and "use {} if there are none" in p

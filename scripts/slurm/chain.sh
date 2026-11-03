@@ -14,6 +14,7 @@
 set -eo pipefail
 cd "$(dirname "$0")/../.."
 set -a; source .env; set +a
+source scripts/slurm/sbatch_retry.sh
 
 : "${RUN:?}" "${CONFIG:?}" "${DATASET_DIR:?}"
 MODEL="${MODEL:-Qwen2.5-7B-Instruct}"
@@ -30,7 +31,7 @@ if [ -n "${AFTER:-}" ]; then S=$(wait_job "$AFTER"); log "wait $AFTER -> $S"; fi
 
 if [ -n "${PREP_ARGS:-}" ]; then
   # PREP_ARGS 可能含逗号，靠 --export=ALL 从环境继承，不写进 --export= 列表
-  J=$(PREP_ARGS="$PREP_ARGS" sbatch --parsable --export=ALL,SKIP_INSPECT=1 scripts/slurm/prepare_data.sbatch)
+  J=$(PREP_ARGS="$PREP_ARGS" sbatch_retry --parsable --export=ALL,SKIP_INSPECT=1 scripts/slurm/prepare_data.sbatch)
   S=$(wait_job "$J"); log "prepare job=$J state=$S"
   [ "$S" = "COMPLETED" ] || { log "prepare failed, stop"; exit 1; }
 fi
@@ -39,7 +40,7 @@ for attempt in 1 2 3; do
   if [ "$attempt" = 1 ] && [ -n "${TRAIN_JOB:-}" ]; then
     J=$TRAIN_JOB
   else
-    J=$(sbatch --parsable --export=ALL,CONFIG="$CONFIG",MODEL="$MODEL",RUN="$RUN",DATASET_DIR="$DATASET_DIR" scripts/slurm/train.sbatch)
+    J=$(sbatch_retry --parsable --export=ALL,CONFIG="$CONFIG",MODEL="$MODEL",RUN="$RUN",DATASET_DIR="$DATASET_DIR" scripts/slurm/train.sbatch)
   fi
   S=$(wait_job "$J"); log "train attempt=$attempt job=$J state=$S"
   [ "$S" = "TIMEOUT" ] || break
@@ -49,7 +50,7 @@ done
 for mode in $EVALS; do
   [ "$mode" = "none" ] && continue
   EXTRA=""; [ "$mode" = "4bit" ] && EXTRA=",LOAD_4BIT=1"
-  J=$(sbatch --parsable --export=ALL,MODEL="$MODEL",RUN="$RUN",LORA=1,TEST="$TEST",BATCH_SIZE=32,MAX_NEW_TOKENS=24$EXTRA scripts/slurm/eval.sbatch)
+  J=$(sbatch_retry --parsable --export=ALL,MODEL="$MODEL",RUN="$RUN",LORA=1,TEST="$TEST",BATCH_SIZE=32,MAX_NEW_TOKENS=24$EXTRA scripts/slurm/eval.sbatch)
   S=$(wait_job "$J"); log "eval-$mode job=$J state=$S"
 done
 log "chain done"

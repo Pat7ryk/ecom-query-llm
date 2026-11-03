@@ -1,0 +1,14 @@
+{
+  "name": "teacher-hf4bit",
+  "engine": "hf",
+  "model": "Qwen2.5-7B-Instruct",
+  "n": 2000,
+  "load_4bit": true,
+  "lora": true,
+  "full_rows_per_s": 8.49,
+  "first_rows_per_s": 34.95,
+  "first_latency_ms_p50": 60.4,
+  "first_latency_ms_p95": 62.9,
+  "first_vs_full_agreement": 0.9845,
+  "gpu_mem_gb": 10.88
+}

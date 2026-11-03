@@ -1,0 +1,14 @@
+{
+  "name": "s1.5b-hf",
+  "engine": "hf",
+  "model": "Qwen2.5-1.5B-Instruct",
+  "n": 2000,
+  "load_4bit": false,
+  "lora": true,
+  "full_rows_per_s": 25.36,
+  "first_rows_per_s": 106.38,
+  "first_latency_ms_p50": 26.2,
+  "first_latency_ms_p95": 26.5,
+  "first_vs_full_agreement": 0.993,
+  "gpu_mem_gb": 7.94
+}
