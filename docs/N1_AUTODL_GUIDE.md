@@ -64,12 +64,16 @@ N1 唯一研究变量是基座改为 `Qwen/Qwen2.5-14B-Instruct`。`configs/sft/
 
 ## 3. Mac → GitHub → AutoDL
 
-本地完成审查、代码和测试后，只在用户授权时 push 功能分支。AutoDL 从相同 commit 拉取；模型、数据、checkpoint 始终在 `$PERSIST_ROOT`，不进 Git。
+N1 功能分支已推送到个人 fork `Pat7ryk/ecom-query-llm`；组长的原始实验仓库只作为上游基线，不作为 AutoDL 的克隆地址。AutoDL 从同一功能分支拉取；模型、数据、checkpoint 始终在 `$PERSIST_ROOT`，不进 Git。
 
 ```bash
-git clone https://github.com/Xander-YangXH/ecom-query-llm.git
+git clone \
+  --branch feat/n1-autodl-qwen14b \
+  --single-branch \
+  https://github.com/Pat7ryk/ecom-query-llm.git
 cd ecom-query-llm
-git switch feat/n1-autodl-qwen14b   # 分支 push 后；否则使用用户提供的 commit/patch
+git rev-parse HEAD
+# 应为本指南所在的已验证 N1 commit；租机前以个人 fork 分支最新 SHA 为准。
 cp .env.autodl.example .env
 # 如 AutoDL 的持久化挂载点不同，只编辑 .env
 bash scripts/autodl/setup_autodl.sh
