@@ -128,6 +128,8 @@ tail -f "$OUTPUT_ROOT/n1/run-all.log"
 
 每个 seed 独立目录，完成后有 `COMPLETED`、`run_manifest.json`、训练日志、环境版本和 GPU 显存 CSV。失败时保留 checkpoint；修复原因后用同一命令安全恢复。已完成目录不会被覆盖。
 
+路径默认由 `.env` 的三个 root 推导；需要挂载到其他已准备目录时，可设置 `N1_MODEL_PATH`、`N1_DATASET_DIR`、`N1_OUTPUT_DIR`（最后一个是包含所有 seed 子目录的 N1 输出根目录），无需改脚本。
+
 如果 formal micro 16 OOM，先保留日志并停止。经团队确认后，例如改成 2×16：
 
 ```bash

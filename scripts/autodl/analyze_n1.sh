@@ -12,8 +12,9 @@ source .venv/bin/activate
 [ -f "$E2A_SCORE_DIR/../DOUBLE_QUANT_CONFIRMED" ] \
   || { echo "E2a inputs were not confirmed under the N1 double-quant protocol" >&2; exit 2; }
 
-SCORES="$OUTPUT_ROOT/n1/label_scores"
-ANALYSIS="$OUTPUT_ROOT/n1/analysis"
+N1_ROOT="${N1_OUTPUT_DIR:-$OUTPUT_ROOT/n1}"
+SCORES="$N1_ROOT/label_scores"
+ANALYSIS="$N1_ROOT/analysis"
 TUNE="$DATA_ROOT/esci_tune/splits/tune.jsonl"
 TEST="$DATA_ROOT/esci_test2500/splits/test.jsonl"
 mkdir -p "$ANALYSIS/preds" "$ANALYSIS/reports"

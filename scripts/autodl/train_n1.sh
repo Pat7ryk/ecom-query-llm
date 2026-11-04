@@ -10,8 +10,8 @@ MODE="${2:-formal}"
 [[ "$SEED" =~ ^(42|43|44)$ ]] || { echo "seed must be 42, 43, or 44" >&2; exit 2; }
 [[ "$MODE" =~ ^(formal|smoke)$ ]] || { echo "mode must be formal or smoke" >&2; exit 2; }
 : "${DATA_ROOT:?}"; : "${MODEL_ROOT:?}"; : "${OUTPUT_ROOT:?}"
-MODEL="$MODEL_ROOT/Qwen2.5-14B-Instruct"
-DATASET_DIR="$DATA_ROOT/e1_relevance/llamafactory"
+MODEL="${N1_MODEL_PATH:-$MODEL_ROOT/Qwen2.5-14B-Instruct}"
+DATASET_DIR="${N1_DATASET_DIR:-$DATA_ROOT/e1_relevance/llamafactory}"
 CONFIG="configs/sft/n1_qwen14b_qlora.yaml"
 MICRO="${N1_MICRO_BATCH:-16}"
 ACCUM="${N1_GRAD_ACCUM:-2}"
@@ -21,7 +21,7 @@ if [ "$MODE" = formal ] && { [ "$MICRO" != 16 ] || [ "$ACCUM" != 2 ]; }; then
   [ -n "${N1_BATCH_OVERRIDE_REASON:-}" ] || { echo "set N1_BATCH_OVERRIDE_REASON for a formal batch override" >&2; exit 2; }
 fi
 
-RUN_ROOT="$OUTPUT_ROOT/n1"
+RUN_ROOT="${N1_OUTPUT_DIR:-$OUTPUT_ROOT/n1}"
 RUN="$RUN_ROOT/${MODE}-seed${SEED}"
 mkdir -p "$RUN_ROOT" "$RUN/logs"
 [ ! -f "$RUN/COMPLETED" ] || { echo "refusing to overwrite completed run: $RUN" >&2; exit 3; }
@@ -29,15 +29,15 @@ command -v llamafactory-cli >/dev/null
 [ -s "$DATASET_DIR/dataset_info.json" ] || { echo "missing prepared E2a data" >&2; exit 1; }
 [ -s "$MODEL/config.json" ] || { echo "missing downloaded 14B model" >&2; exit 1; }
 if [ "$MODE" = formal ]; then
-  [ -f "$OUTPUT_ROOT/n1/smoke-seed42/COMPLETED" ] \
-    && [ -s "$OUTPUT_ROOT/n1/smoke-seed42/adapter_config.json" ] \
-    && [ -s "$OUTPUT_ROOT/n1/smoke-seed42/adapter_model.safetensors" ] \
+  [ -f "$RUN_ROOT/smoke-seed42/COMPLETED" ] \
+    && [ -s "$RUN_ROOT/smoke-seed42/adapter_config.json" ] \
+    && [ -s "$RUN_ROOT/smoke-seed42/adapter_model.safetensors" ] \
     || { echo "formal N1 blocked: run seed 42 smoke successfully first" >&2; exit 5; }
   if [ ! -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED" ]; then
     [ -n "${N0_GATE_WAIVER_REASON:-}" ] \
       || { echo "formal N1 blocked: run N0 or set a team-approved N0_GATE_WAIVER_REASON" >&2; exit 5; }
-    mkdir -p "$OUTPUT_ROOT/n1"
-    printf '%s\n' "$N0_GATE_WAIVER_REASON" > "$OUTPUT_ROOT/n1/N0_GATE_WAIVER.txt"
+    mkdir -p "$RUN_ROOT"
+    printf '%s\n' "$N0_GATE_WAIVER_REASON" > "$RUN_ROOT/N0_GATE_WAIVER.txt"
   fi
 fi
 
@@ -82,7 +82,7 @@ fi
 [ -s "$RUN/adapter_config.json" ] || { echo "training returned success but adapter_config.json is missing" >&2; exit 4; }
 [ -s "$RUN/adapter_model.safetensors" ] || { echo "training returned success but adapter weights are missing" >&2; exit 4; }
 
-python - "$RUN" "$SEED" "$MODE" "$MICRO" "$ACCUM" "$START" "$END" <<'PY'
+python - "$RUN" "$SEED" "$MODE" "$MICRO" "$ACCUM" "$START" "$END" "${N1_BATCH_OVERRIDE_REASON:-}" <<'PY'
 import json, sys
 from pathlib import Path
 run = Path(sys.argv[1])
@@ -96,6 +96,7 @@ manifest = {
     "elapsed_seconds": int(sys.argv[7]) - int(sys.argv[6]),
     "best_model_checkpoint": trainer.get("best_model_checkpoint"),
     "best_metric": trainer.get("best_metric"),
+    "batch_override_reason": sys.argv[8] or None,
 }
 (run / "run_manifest.json").write_text(json.dumps(manifest, indent=2))
 PY
