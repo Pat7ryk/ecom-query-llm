@@ -1,0 +1,12 @@
+{
+  "name": "teacher-vllm",
+  "engine": "vllm",
+  "model": "Qwen2.5-7B-Instruct",
+  "n": 2000,
+  "load_4bit": false,
+  "lora": true,
+  "first_rows_per_s": 219.7,
+  "first_latency_ms_p50": 24.9,
+  "first_latency_ms_p95": 25.1,
+  "labels_missing_from_top20": 0
+}

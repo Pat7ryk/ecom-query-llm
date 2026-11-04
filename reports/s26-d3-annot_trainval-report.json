@@ -1,0 +1,28 @@
+{
+  "queries": 5250,
+  "kept": 5112,
+  "dropped": 138,
+  "retried_and_kept": 70,
+  "intent": {
+    "product_search": 4698,
+    "other": 307,
+    "inquiry": 89,
+    "after_sales": 17,
+    "compare": 1
+  },
+  "attribute_keys": {
+    "category": 1640,
+    "brand": 805,
+    "gender": 659,
+    "color": 349,
+    "size": 302,
+    "model": 287,
+    "material": 197,
+    "price_min": 22,
+    "price_max": 17
+  },
+  "queries_with_attributes": 0.3813,
+  "rewrite_changed": 0.0638,
+  "seconds": 583,
+  "queries_per_second": 9.01
+}

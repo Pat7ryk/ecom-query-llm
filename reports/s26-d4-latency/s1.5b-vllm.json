@@ -1,0 +1,12 @@
+{
+  "name": "s1.5b-vllm",
+  "engine": "vllm",
+  "model": "Qwen2.5-1.5B-Instruct",
+  "n": 2000,
+  "load_4bit": false,
+  "lora": true,
+  "first_rows_per_s": 762.42,
+  "first_latency_ms_p50": 9.2,
+  "first_latency_ms_p95": 9.5,
+  "labels_missing_from_top20": 0
+}

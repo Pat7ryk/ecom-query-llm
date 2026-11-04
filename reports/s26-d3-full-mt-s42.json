@@ -1,0 +1,26 @@
+{
+  "full": {
+    "n": 2435,
+    "format_valid_rate": 1.0,
+    "intent_acc": 0.9630390143737166,
+    "intent_macro_f1": 0.6183381414077722,
+    "attr_precision": 0.7946611909650924,
+    "attr_recall": 0.7521865889212828,
+    "attr_f1": 0.7728407388916625,
+    "relevance_acc": null,
+    "rewrite_exact_match": 0.9441478439425052,
+    "by_difficulty": {
+      "unlabeled": {
+        "n": 2435,
+        "format_valid_rate": 1.0,
+        "intent_acc": 0.9630390143737166,
+        "intent_macro_f1": 0.6183381414077722,
+        "attr_precision": 0.7946611909650924,
+        "attr_recall": 0.7521865889212828,
+        "attr_f1": 0.7728407388916625,
+        "relevance_acc": null,
+        "rewrite_exact_match": 0.9441478439425052
+      }
+    }
+  }
+}
