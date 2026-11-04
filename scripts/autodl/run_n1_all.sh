@@ -5,16 +5,45 @@ set -a; source "${ENV_FILE:-.env}"; set +a
 : "${OUTPUT_ROOT:?}"
 for seed in 42 43 44; do
   if [ -f "$OUTPUT_ROOT/n1/formal-seed${seed}/COMPLETED" ]; then
+    [ -s "$OUTPUT_ROOT/n1/formal-seed${seed}/adapter_config.json" ] \
+      && [ -s "$OUTPUT_ROOT/n1/formal-seed${seed}/adapter_model.safetensors" ] \
+      && [ -s "$OUTPUT_ROOT/n1/formal-seed${seed}/run_manifest.json" ] \
+      || { echo "seed $seed has a stale/broken COMPLETED marker" >&2; exit 4; }
     echo "seed $seed training already complete; skip"
   else
     bash scripts/autodl/train_n1.sh "$seed" formal
   fi
   for part in tune test; do
-    if [ -s "$OUTPUT_ROOT/n1/label_scores/n1-seed${seed}-${part}.jsonl" ]; then
+    SCORE="$OUTPUT_ROOT/n1/label_scores/n1-seed${seed}-${part}.jsonl"
+    if [ -s "$SCORE" ] && [ -s "$SCORE.protocol" ]; then
       echo "seed $seed $part scores already complete; skip"
+    elif [ -s "$SCORE" ]; then
+      echo "existing score file lacks a double-quant protocol marker: $SCORE" >&2
+      exit 4
     else
       bash scripts/autodl/score_n1.sh "$seed" "$part"
     fi
   done
 done
+python - "$OUTPUT_ROOT/n1" <<'PY'
+import csv, json, re, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+rows = []
+for seed in (42, 43, 44):
+    run = root / f"formal-seed{seed}"
+    manifest = json.loads((run / "run_manifest.json").read_text())
+    peak = 0
+    for line in (run / "logs/gpu-memory.csv").read_text().splitlines()[1:]:
+        match = re.search(r",\s*([0-9]+) MiB,", line)
+        if match:
+            peak = max(peak, int(match.group(1)))
+    if peak <= 0:
+        raise SystemExit(f"missing GPU memory samples for seed {seed}")
+    rows.append({**manifest, "status": "completed", "peak_gpu_memory_mib": peak})
+(root / "training_summary.json").write_text(json.dumps(rows, indent=2))
+with (root / "training_summary.csv").open("w", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=rows[0].keys())
+    writer.writeheader(); writer.writerows(rows)
+PY
 echo "All N1 seeds and label scores completed. Run analyze_n1.sh next."

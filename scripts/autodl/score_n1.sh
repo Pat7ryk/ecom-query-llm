@@ -25,6 +25,7 @@ mkdir -p "$OUT_DIR" "$OUTPUT_ROOT/n1/logs"
 START=$SECONDS
 PYTHONPATH=src python -m ecomq.eval.score_labels \
   --model "$MODEL" --lora "$ADAPTER" --test "$INPUT" --output "$OUT" \
-  --batch-size "${N1_SCORE_BATCH:-32}" --load-4bit \
+  --batch-size "${N1_SCORE_BATCH:-32}" --load-4bit --double-quant \
   2>&1 | tee "$OUTPUT_ROOT/n1/logs/score-seed${SEED}-${PART}.log"
+printf '%s\n' 'bnb 4-bit NF4, bf16 compute, double quantization enabled' > "$OUT.protocol"
 echo "score_labels seed=$SEED part=$PART elapsed=$((SECONDS - START))s output=$OUT"

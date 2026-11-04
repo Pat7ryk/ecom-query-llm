@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from ecomq.data.audit_n1 import audit_datasets
+from ecomq.eval.score_labels import bnb_4bit_kwargs
 
 
 def _write(path: Path, split: str, query_ids: list[int]) -> None:
@@ -80,3 +81,12 @@ def test_n1_config_preserves_e2a_except_model_and_explicit_defaults():
             key, value = line.split(":", 1)
             parsed[key.strip()] = value.strip()
     assert {key: parsed.get(key) for key in required} == required
+
+
+def test_label_scoring_can_match_training_double_quantization():
+    assert bnb_4bit_kwargs(double_quant=True) == {
+        "load_in_4bit": True,
+        "bnb_4bit_quant_type": "nf4",
+        "bnb_4bit_compute_dtype": "bf16",
+        "bnb_4bit_use_double_quant": True,
+    }

@@ -9,6 +9,8 @@ source .venv/bin/activate
 : "${E2A_SCORE_DIR:?set to directory containing e2a/e5 seed tune/test scores}"
 : "${E2A_PRED_DIR:?set to directory containing E2a prior-adjusted prediction files}"
 : "${COMMITTEE_PREDS:?set to comma-separated committee prediction files for clean metric}"
+[ -f "$E2A_SCORE_DIR/../DOUBLE_QUANT_CONFIRMED" ] \
+  || { echo "E2a inputs were not confirmed under the N1 double-quant protocol" >&2; exit 2; }
 
 SCORES="$OUTPUT_ROOT/n1/label_scores"
 ANALYSIS="$OUTPUT_ROOT/n1/analysis"
@@ -21,6 +23,8 @@ N1_RAW_PREDS=()
 N1_SCORES=()
 for seed in 42 43 44; do
   PREFIX="n1-seed${seed}"
+  [ -s "$SCORES/$PREFIX-tune.jsonl.protocol" ] && [ -s "$SCORES/$PREFIX-test.jsonl.protocol" ] \
+    || { echo "N1 seed $seed scores lack double-quant protocol markers" >&2; exit 2; }
   python -m ecomq.eval.prior_adjust \
     --tune-recs "$TUNE" --tune-scores "$SCORES/$PREFIX-tune.jsonl" \
     --test-recs "$TEST" --test-scores "$SCORES/$PREFIX-test.jsonl" \

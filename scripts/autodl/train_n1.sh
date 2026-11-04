@@ -28,6 +28,18 @@ mkdir -p "$RUN_ROOT" "$RUN/logs"
 command -v llamafactory-cli >/dev/null
 [ -s "$DATASET_DIR/dataset_info.json" ] || { echo "missing prepared E2a data" >&2; exit 1; }
 [ -s "$MODEL/config.json" ] || { echo "missing downloaded 14B model" >&2; exit 1; }
+if [ "$MODE" = formal ]; then
+  [ -f "$OUTPUT_ROOT/n1/smoke-seed42/COMPLETED" ] \
+    && [ -s "$OUTPUT_ROOT/n1/smoke-seed42/adapter_config.json" ] \
+    && [ -s "$OUTPUT_ROOT/n1/smoke-seed42/adapter_model.safetensors" ] \
+    || { echo "formal N1 blocked: run seed 42 smoke successfully first" >&2; exit 5; }
+  if [ ! -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED" ]; then
+    [ -n "${N0_GATE_WAIVER_REASON:-}" ] \
+      || { echo "formal N1 blocked: run N0 or set a team-approved N0_GATE_WAIVER_REASON" >&2; exit 5; }
+    mkdir -p "$OUTPUT_ROOT/n1"
+    printf '%s\n' "$N0_GATE_WAIVER_REASON" > "$OUTPUT_ROOT/n1/N0_GATE_WAIVER.txt"
+  fi
+fi
 
 bash scripts/autodl/gpu_check.sh
 python -m pip freeze --exclude-editable > "$RUN/logs/pip-freeze.txt"

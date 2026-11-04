@@ -54,7 +54,7 @@ N1 唯一研究变量是基座改为 `Qwen/Qwen2.5-14B-Instruct`。`configs/sft/
 2. 不允许通过缩短 cutoff、减少数据或 epoch 解决正式实验 OOM。smoke 的 `max_samples` 与短 epoch 仅用于工程验证，输出目录与 formal 隔离。
 3. bf16 必须由 `torch.cuda.is_bf16_supported()` 实测通过。
 4. LlamaFactory v0.9.5 自动从输出目录最新 checkpoint 续训；完成标记存在时脚本拒绝覆盖。
-5. 原 `score_labels --load-4bit` 明确使用 NF4 + bf16 compute，但没有显式启用 double quantization；这是 E2a 已发布评估协议的一部分。N1 为公平比较继续复用它。若团队决定改成 double quantization，必须同时重打 E2a 三个种子的分数，不能只改 N1。
+5. 原 `score_labels --load-4bit` 明确使用 NF4 + bf16 compute，但没有显式启用训练时的 double quantization。N1 使用新增的 `--double-quant` 与训练严格一致；为避免只改变 N1，正式比较前必须用 `rescore_e2a_for_n1.sh` 把 E2a 三个种子按相同协议重新打分。分析脚本会检查确认标记，拒绝混用历史分数。
 6. clean 口径必须使用不参与 E2a/N1 比较的委员会预测；`analyze_n1.sh` 因此要求显式提供 `COMMITTEE_PREDS`，不会用 N1 自己定义争议集。
 7. AutoDL 镜像可能带与 CCDS 锁定环境不同的 PyTorch/CUDA。安装脚本不猜版本、不重装 torch，而是先检查镜像，再安装其余锁定核心依赖并保存 freeze。
 
@@ -115,9 +115,11 @@ test -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED"
 
 该步骤需要 GPU，当前没有伪造结果。若团队书面接受 L40S N0 作为跨环境门禁，至少仍需 N1 smoke、数据 hash 与版本快照全部通过。
 
-正式串行三种子：
+正式串行三种子会强制检查 seed 42 smoke 和 N0 门禁。若团队明确接受已经完成的 L40S N0，可记录审批理由后跳过 AutoDL N0；不能无记录绕过：
 
 ```bash
+# 仅当团队明确批准复用 L40S N0 时设置；否则不要设置
+export N0_GATE_WAIVER_REASON='团队于 YYYY-MM-DD 接受最终仓库中的 L40S N0 作为门禁'
 nohup bash scripts/autodl/run_n1_all.sh \
   > "$OUTPUT_ROOT/n1/run-all.log" 2>&1 &
 echo $! > "$OUTPUT_ROOT/n1/run-all.pid"
@@ -139,16 +141,18 @@ bash scripts/autodl/train_n1.sh 42 formal
 
 ## 6. 正式分析
 
-把 E2a 三个种子的原始 score 与 prior prediction 放到持久化目录。文件名需要与脚本列出的 E2a 名称一致；clean 委员会沿用 S18/S20 的独立 rich-input 三种子预测。
+先把 E2a 三个种子的 adapter 复制到持久化目录，并按 N1 的 double-quant 协议重新打分。不能直接复用历史 E2a scores。clean 委员会沿用 S18/S20 的独立 rich-input 三种子预测。
 
 ```bash
-export E2A_SCORE_DIR="$OUTPUT_ROOT/baseline/e2a/scores"
-export E2A_PRED_DIR="$OUTPUT_ROOT/baseline/e2a/preds"
+export E2A_ADAPTER_ROOT="$OUTPUT_ROOT/baseline/e2a/adapters"
+bash scripts/autodl/rescore_e2a_for_n1.sh
+export E2A_SCORE_DIR="$OUTPUT_ROOT/baseline/e2a-double-quant/scores"
+export E2A_PRED_DIR="$OUTPUT_ROOT/baseline/e2a-double-quant/preds"
 export COMMITTEE_PREDS="$OUTPUT_ROOT/committee/rich-s42.jsonl,$OUTPUT_ROOT/committee/rich-s43.jsonl,$OUTPUT_ROOT/committee/rich-s44.jsonl"
 bash scripts/autodl/analyze_n1.sh
 ```
 
-产出：每 seed 的 prior report（包含 Accuracy、Macro F1、各类 P/R/F1、混淆矩阵）、raw/prior predictions、两组种子的 mean/range 与 query bootstrap、full/clean/merged、排序 AUC/AP。所有 prior bias 只由 tune 得出，再应用到 test。
+产出：`training_summary.json/csv`（三个种子的状态、最佳 checkpoint、eval loss、耗时、有效 batch、峰值显存），以及每 seed 的 prior report（包含 Accuracy、Macro F1、各类 P/R/F1、混淆矩阵）、raw/prior predictions、两组种子的 mean/range 与 query bootstrap、full/clean/merged、排序 AUC/AP。所有 prior bias 只由 tune 得出，再应用到 test。
 
 将真实数值填入 `reports/n1/TEMPLATE.md`，并把小型 JSON 报告复制到 Git 跟踪的 `reports/n1/`；不要提交 scores、数据、模型或 checkpoint。
 

@@ -4,12 +4,24 @@
 （Qwen 为 <|im_end|>）。整段回复的对数概率 = 回复中每个 token 的对数概率之和，
 这样不同长度的标签之间可以直接比较（都是“生成完整回复并结束”的概率）。
 使用右侧填充：Qwen2 前向时按位置序号计算位置编码，左侧填充会改变位置、影响 logits。
+``--double-quant`` 用于严格复现 LlamaFactory QLoRA 的默认 4-bit NF4 double-quant 加载；
+历史 E2a 报告没有开启该选项，跨模型比较时必须给两边使用同一设置并重新打分。
 输出：每行 {"id", "logp": {label: float}}。
 """
 import argparse
 
 from ecomq.data.io import read_jsonl, write_jsonl
 from ecomq.schema import LABELS, RELEVANCE, build_user_prompt, format_output, task_of
+
+
+def bnb_4bit_kwargs(double_quant: bool = False) -> dict:
+    """Return the auditable bitsandbytes protocol without importing torch at module import time."""
+    return {
+        "load_in_4bit": True,
+        "bnb_4bit_quant_type": "nf4",
+        "bnb_4bit_compute_dtype": "bf16",
+        "bnb_4bit_use_double_quant": double_quant,
+    }
 
 
 def label_logps(model, tok, prompts: list[str], batch_size: int = 32,
@@ -60,8 +72,12 @@ def main():
     ap.add_argument("--output", required=True)
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--load-4bit", action="store_true")
+    ap.add_argument("--double-quant", action="store_true",
+                    help="4-bit NF4 时启用 nested/double quantization；需与训练和对照模型一致")
     ap.add_argument("--task", default="relevance", choices=["relevance", "relevance_zh"])
     args = ap.parse_args()
+    if args.double_quant and not args.load_4bit:
+        ap.error("--double-quant requires --load-4bit")
 
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
@@ -69,8 +85,9 @@ def main():
     tok = AutoTokenizer.from_pretrained(args.model)
     kwargs = {"dtype": torch.bfloat16, "device_map": {"": 0}}
     if args.load_4bit:
-        kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16)
+        quant = bnb_4bit_kwargs(args.double_quant)
+        quant["bnb_4bit_compute_dtype"] = torch.bfloat16
+        kwargs["quantization_config"] = BitsAndBytesConfig(**quant)
     model = AutoModelForCausalLM.from_pretrained(args.model, **kwargs)
     if args.lora:
         from peft import PeftModel
