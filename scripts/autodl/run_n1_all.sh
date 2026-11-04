@@ -3,6 +3,14 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 set -a; source "${ENV_FILE:-.env}"; set +a
 : "${OUTPUT_ROOT:?}"
+[ -f "$OUTPUT_ROOT/n1/smoke-seed42/COMPLETED" ] \
+  && [ -s "$OUTPUT_ROOT/n1/smoke-seed42/adapter_config.json" ] \
+  && [ -s "$OUTPUT_ROOT/n1/smoke-seed42/adapter_model.safetensors" ] \
+  || { echo "N1 runner blocked: seed 42 smoke is missing or incomplete" >&2; exit 5; }
+if [ ! -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED" ] && [ -z "${N0_GATE_WAIVER_REASON:-}" ]; then
+  echo "N1 runner blocked: N0 gate is missing and no team-approved waiver was recorded" >&2
+  exit 5
+fi
 for seed in 42 43 44; do
   if [ -f "$OUTPUT_ROOT/n1/formal-seed${seed}/COMPLETED" ]; then
     [ -s "$OUTPUT_ROOT/n1/formal-seed${seed}/adapter_config.json" ] \
