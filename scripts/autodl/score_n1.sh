@@ -13,9 +13,9 @@ N1_ROOT="${N1_OUTPUT_DIR:-$OUTPUT_ROOT/n1}"
 MODEL="${N1_MODEL_PATH:-$MODEL_ROOT/Qwen2.5-14B-Instruct}"
 ADAPTER="$N1_ROOT/formal-seed${SEED}"
 if [ "$PART" = tune ]; then
-  INPUT="$DATA_ROOT/esci_tune/splits/tune.jsonl"
+  INPUT="${N1_TUNE_PATH:-$DATA_ROOT/esci_tune/splits/tune.jsonl}"
 else
-  INPUT="$DATA_ROOT/esci_test2500/splits/test.jsonl"
+  INPUT="${N1_TEST_PATH:-$DATA_ROOT/esci_test2500/splits/test.jsonl}"
 fi
 OUT_DIR="$N1_ROOT/label_scores"
 OUT="$OUT_DIR/n1-seed${SEED}-${PART}.jsonl"

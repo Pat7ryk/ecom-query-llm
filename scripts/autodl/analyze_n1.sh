@@ -15,8 +15,8 @@ source .venv/bin/activate
 N1_ROOT="${N1_OUTPUT_DIR:-$OUTPUT_ROOT/n1}"
 SCORES="$N1_ROOT/label_scores"
 ANALYSIS="$N1_ROOT/analysis"
-TUNE="$DATA_ROOT/esci_tune/splits/tune.jsonl"
-TEST="$DATA_ROOT/esci_test2500/splits/test.jsonl"
+TUNE="${N1_TUNE_PATH:-$DATA_ROOT/esci_tune/splits/tune.jsonl}"
+TEST="${N1_TEST_PATH:-$DATA_ROOT/esci_test2500/splits/test.jsonl}"
 mkdir -p "$ANALYSIS/preds" "$ANALYSIS/reports"
 
 N1_PRIOR_PREDS=()

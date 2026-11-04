@@ -12,6 +12,7 @@ MODE="${2:-formal}"
 : "${DATA_ROOT:?}"; : "${MODEL_ROOT:?}"; : "${OUTPUT_ROOT:?}"
 MODEL="${N1_MODEL_PATH:-$MODEL_ROOT/Qwen2.5-14B-Instruct}"
 DATASET_DIR="${N1_DATASET_DIR:-$DATA_ROOT/e1_relevance/llamafactory}"
+DATA_MANIFEST="${N1_DATA_MANIFEST:-$DATA_ROOT/n1_data_manifest.json}"
 CONFIG="configs/sft/n1_qwen14b_qlora.yaml"
 MICRO="${N1_MICRO_BATCH:-16}"
 ACCUM="${N1_GRAD_ACCUM:-2}"
@@ -27,13 +28,18 @@ mkdir -p "$RUN_ROOT" "$RUN/logs"
 [ ! -f "$RUN/COMPLETED" ] || { echo "refusing to overwrite completed run: $RUN" >&2; exit 3; }
 command -v llamafactory-cli >/dev/null
 [ -s "$DATASET_DIR/dataset_info.json" ] || { echo "missing prepared E2a data" >&2; exit 1; }
+[ -s "$DATA_MANIFEST" ] || { echo "missing data manifest: $DATA_MANIFEST" >&2; exit 1; }
+if [ -n "${N1_DATASET_DIR:-}" ]; then
+  [ -n "${N1_DATA_MANIFEST:-}" ] && [ -n "${N1_TUNE_PATH:-}" ] && [ -n "${N1_TEST_PATH:-}" ] \
+    || { echo "N1_DATASET_DIR override requires N1_DATA_MANIFEST, N1_TUNE_PATH, and N1_TEST_PATH" >&2; exit 2; }
+fi
 [ -s "$MODEL/config.json" ] || { echo "missing downloaded 14B model" >&2; exit 1; }
 if [ "$MODE" = formal ]; then
   [ -f "$RUN_ROOT/smoke-seed42/COMPLETED" ] \
     && [ -s "$RUN_ROOT/smoke-seed42/adapter_config.json" ] \
     && [ -s "$RUN_ROOT/smoke-seed42/adapter_model.safetensors" ] \
     || { echo "formal N1 blocked: run seed 42 smoke successfully first" >&2; exit 5; }
-  if [ ! -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED" ]; then
+  if [ ! -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED" ] && [ ! -s "$RUN_ROOT/N0_GATE_WAIVER.txt" ]; then
     [ -n "${N0_GATE_WAIVER_REASON:-}" ] \
       || { echo "formal N1 blocked: run N0 or set a team-approved N0_GATE_WAIVER_REASON" >&2; exit 5; }
     mkdir -p "$RUN_ROOT"
@@ -44,7 +50,7 @@ fi
 bash scripts/autodl/gpu_check.sh
 python -m pip freeze --exclude-editable > "$RUN/logs/pip-freeze.txt"
 git rev-parse HEAD > "$RUN/logs/git-commit.txt"
-cp "$DATA_ROOT/n1_data_manifest.json" "$RUN/logs/data-manifest.json"
+cp "$DATA_MANIFEST" "$RUN/logs/data-manifest.json"
 cp "$MODEL/model_revision.json" "$RUN/logs/model-revision.json"
 
 GPU_LOG="$RUN/logs/gpu-memory.csv"

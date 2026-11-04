@@ -8,7 +8,9 @@ N1_ROOT="${N1_OUTPUT_DIR:-$OUTPUT_ROOT/n1}"
   && [ -s "$N1_ROOT/smoke-seed42/adapter_config.json" ] \
   && [ -s "$N1_ROOT/smoke-seed42/adapter_model.safetensors" ] \
   || { echo "N1 runner blocked: seed 42 smoke is missing or incomplete" >&2; exit 5; }
-if [ ! -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED" ] && [ -z "${N0_GATE_WAIVER_REASON:-}" ]; then
+if [ ! -f "$OUTPUT_ROOT/n0/analysis/N0_GATE_PASSED" ] \
+  && [ ! -s "$N1_ROOT/N0_GATE_WAIVER.txt" ] \
+  && [ -z "${N0_GATE_WAIVER_REASON:-}" ]; then
   echo "N1 runner blocked: N0 gate is missing and no team-approved waiver was recorded" >&2
   exit 5
 fi
