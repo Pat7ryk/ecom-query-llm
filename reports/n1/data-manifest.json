@@ -1,0 +1,89 @@
+{
+  "splits": {
+    "train": {
+      "path": "$DATA_ROOT/e1_relevance/splits/train.jsonl",
+      "sha256": "6309b7de43694017b3ab492ee551183155d660f35b2b763b7ea533197501a95d",
+      "bytes": 7386697,
+      "rows": 20000,
+      "queries": 5000,
+      "labels": {
+        "complement": 408,
+        "exact": 13926,
+        "irrelevant": 1603,
+        "substitute": 4063
+      }
+    },
+    "val": {
+      "path": "$DATA_ROOT/e1_relevance/splits/val.jsonl",
+      "sha256": "a2bc987d1c7aa0fb742a77b39198b0f662cee94df87babd178ccdfa2f379f40f",
+      "bytes": 370724,
+      "rows": 1000,
+      "queries": 250,
+      "labels": {
+        "complement": 19,
+        "exact": 719,
+        "irrelevant": 76,
+        "substitute": 186
+      }
+    },
+    "tune": {
+      "path": "$DATA_ROOT/esci_tune/splits/tune.jsonl",
+      "sha256": "d32bcb733b86b804fdb0ed0865dd01bbf34c8c3a67e5cefc0ce10fff1aa1a094",
+      "bytes": 2213308,
+      "rows": 6000,
+      "queries": 1500,
+      "labels": {
+        "complement": 88,
+        "exact": 4263,
+        "irrelevant": 387,
+        "substitute": 1262
+      }
+    },
+    "test": {
+      "path": "$DATA_ROOT/esci_test2500/splits/test.jsonl",
+      "sha256": "3e805162aeddb81164e84bc361fe49e54a3c8d079797ef49d6ffc8fc54c8d7b6",
+      "bytes": 3692047,
+      "rows": 10000,
+      "queries": 2500,
+      "labels": {
+        "complement": 259,
+        "exact": 6669,
+        "irrelevant": 909,
+        "substitute": 2163
+      }
+    }
+  },
+  "query_overlap": {},
+  "expected_sizes": {
+    "train": {
+      "rows": 20000,
+      "queries": 5000
+    },
+    "val": {
+      "rows": 1000,
+      "queries": 250
+    },
+    "tune": {
+      "rows": 6000,
+      "queries": 1500
+    },
+    "test": {
+      "rows": 10000,
+      "queries": 2500
+    }
+  },
+  "raw_files": {
+    "shopping_queries_dataset_examples.parquet": {
+      "sha256": "4a735b693b4a424a6fc67f5be6e4c811495c488bbf66d02a602d308b2744263a",
+      "bytes": 51286808
+    },
+    "shopping_queries_dataset_products.parquet": {
+      "sha256": "25124442d064d64b26f74082d6fa09438d679efc0c183cf28d19064a2b65a265",
+      "bytes": 1108857465
+    },
+    "shopping_queries_dataset_sources.csv": {
+      "sha256": "a5fed8ecc016443de40bf3c63098f0e3f23bbe4daa4236f1c38b8c3184778c50",
+      "bytes": 1682802
+    }
+  }
+}

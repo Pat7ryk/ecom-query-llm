@@ -1,0 +1,4 @@
+seed,mode,micro_batch,gradient_accumulation,effective_batch,started_epoch_s,ended_epoch_s,elapsed_seconds,best_model_checkpoint,best_metric,batch_override_reason,status,peak_gpu_memory_mib
+42,formal,1,32,32,1793905538,1793913664,8126,/root/autodl-tmp/ecomq/outputs/n1/formal-seed42/checkpoint-625,0.061404164880514145,"RTX 5090 32GB: micro-batch=1, gradient_accumulation=32, effective batch=32",completed,31478
+43,formal,1,32,32,1793916101,1793924581,8480,/root/autodl-tmp/ecomq/outputs/n1/formal-seed43/checkpoint-400,0.06190183013677597,"RTX 5090 32GB: micro-batch=1, gradient_accumulation=32, effective batch=32",completed,28924
+44,formal,1,32,32,1793927021,1793935837,8816,/root/autodl-tmp/ecomq/outputs/n1/formal-seed44/checkpoint-625,0.061827659606933594,"RTX 5090 32GB: micro-batch=1, gradient_accumulation=32, effective batch=32",completed,27514

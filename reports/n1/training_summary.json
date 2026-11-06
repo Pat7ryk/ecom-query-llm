@@ -1,0 +1,47 @@
+[
+  {
+    "seed": 42,
+    "mode": "formal",
+    "micro_batch": 1,
+    "gradient_accumulation": 32,
+    "effective_batch": 32,
+    "started_epoch_s": 1793905538,
+    "ended_epoch_s": 1793913664,
+    "elapsed_seconds": 8126,
+    "best_model_checkpoint": "/root/autodl-tmp/ecomq/outputs/n1/formal-seed42/checkpoint-625",
+    "best_metric": 0.061404164880514145,
+    "batch_override_reason": "RTX 5090 32GB: micro-batch=1, gradient_accumulation=32, effective batch=32",
+    "status": "completed",
+    "peak_gpu_memory_mib": 31478
+  },
+  {
+    "seed": 43,
+    "mode": "formal",
+    "micro_batch": 1,
+    "gradient_accumulation": 32,
+    "effective_batch": 32,
+    "started_epoch_s": 1793916101,
+    "ended_epoch_s": 1793924581,
+    "elapsed_seconds": 8480,
+    "best_model_checkpoint": "/root/autodl-tmp/ecomq/outputs/n1/formal-seed43/checkpoint-400",
+    "best_metric": 0.06190183013677597,
+    "batch_override_reason": "RTX 5090 32GB: micro-batch=1, gradient_accumulation=32, effective batch=32",
+    "status": "completed",
+    "peak_gpu_memory_mib": 28924
+  },
+  {
+    "seed": 44,
+    "mode": "formal",
+    "micro_batch": 1,
+    "gradient_accumulation": 32,
+    "effective_batch": 32,
+    "started_epoch_s": 1793927021,
+    "ended_epoch_s": 1793935837,
+    "elapsed_seconds": 8816,
+    "best_model_checkpoint": "/root/autodl-tmp/ecomq/outputs/n1/formal-seed44/checkpoint-625",
+    "best_metric": 0.061827659606933594,
+    "batch_override_reason": "RTX 5090 32GB: micro-batch=1, gradient_accumulation=32, effective batch=32",
+    "status": "completed",
+    "peak_gpu_memory_mib": 27514
+  }
+]
